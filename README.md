@@ -1,36 +1,221 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+npm install @apollo/server graphql apollo-server-micro micro-cors
 
-## Getting Started
+@apollo/server: Core Apollo Server for GraphQL.
+graphql: GraphQL.js library.
+apollo-server-micro: Apollo Server integration for Next.js API routes (works with micro).
+micro-cors: CORS middleware for handling GraphQL requests.
 
-First, run the development server:
+1. Ask for what you need, get exactly that
+   In REST, you often get fixed data structures. With GraphQL, you define the shape of the response right in your query.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+graphql
+Copy
+Edit
+query {
+user(id: "123") {
+name
+email
+}
+}
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Instead of multiple REST endpoints like:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+bash
+Copy
+Edit
+GET /users
+GET /users/123/posts
+GET /users/123/friends
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+GraphQL uses a single endpoint, usually /graphql, and allows you to ask for everything you need in one go.
 
-## Learn More
+graphql
+Copy
+Edit
+query {
+user(id: "123") {
+name
+posts {
+title
+}
+friends {
+name
+}
+}
+}
 
-To learn more about Next.js, take a look at the following resources:
+3. Strongly Typed Schema
+   GraphQL APIs are built around a schema — a contract between client and server. It defines:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+What queries and mutations are possible
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+What types exist
 
-## Deploy on Vercel
+What fields each type has
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Example of a schema:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+graphql
+Copy
+Edit
+type User {
+id: ID!
+name: String!
+email: String!
+posts: [Post]
+}
+
+type Post {
+id: ID!
+title: String!
+content: String!
+}
+
+4. Real-time Data with Subscriptions
+   GraphQL supports subscriptions, which allow clients to receive real-time updates over WebSockets.
+
+graphql
+Copy
+Edit
+subscription {
+messageAdded {
+id
+content
+sender {
+name
+}
+}
+}
+
+5. Mutations for Data Changes
+   While queries fetch data, mutations are used to modify it (like POST, PUT, DELETE in REST).
+
+graphql
+Copy
+Edit
+mutation {
+createUser(name: "Iram", email: "iram@example.com") {
+id
+name
+}
+}
+
+💡 1. Schema – “The blueprint of your API”
+A GraphQL schema defines:
+
+What types your API supports (e.g., User, Post)
+
+What queries can be made (read data)
+
+What mutations can be done (modify data)
+
+Optional: subscriptions (real-time updates)
+
+Think of it like a contract between client and server:
+
+“Here’s what you can ask for, and this is what you’ll get back.”
+
+📦 Example:
+graphql
+Copy
+Edit
+type User {
+id: ID!
+name: String!
+email: String!
+}
+
+type Query {
+getUser(id: ID!): User
+}
+
+type Mutation {
+createUser(name: String!, email: String!): User
+}
+This schema says:
+
+There's a User type with id, name, email
+
+You can get a user by ID (query)
+
+You can create a user (mutation)
+
+⚙️ 2. Resolvers – “The logic behind your schema”
+Resolvers are functions that run when a field in the schema is queried. They define how to fetch or compute the data.
+
+Each field in the schema has a resolver function behind it (unless it's a simple scalar, then GraphQL can auto-resolve).
+
+🧠 Example:
+If someone runs this query:
+
+graphql
+Copy
+Edit
+query {
+getUser(id: "1") {
+name
+}
+}
+Then this resolver will run:
+
+js
+Copy
+Edit
+const resolvers = {
+Query: {
+getUser: (\_, { id }, context) => {
+// fetch user from DB or mock
+return { id: "1", name: "Iram", email: "iram@example.com" };
+}
+}
+}
+You can have resolvers for:
+
+Query (read data)
+
+Mutation (write/change data)
+
+Specific fields (for nested or computed fields)
+🔥 3. Apollo Server – “The engine that runs your GraphQL API”
+Apollo Server is a library that connects:
+
+Your schema
+
+Your resolvers
+
+And creates a GraphQL server endpoint
+
+🚀 Example setup:
+js
+Copy
+Edit
+const { ApolloServer, gql } = require('apollo-server');
+
+// 1. Define schema
+const typeDefs = gql`
+type User {
+id: ID!
+name: String!
+email: String!
+}
+
+type Query {
+getUser(id: ID!): User
+}
+`;
+
+// 2. Define resolvers
+const resolvers = {
+Query: {
+getUser: (\_, { id }) => {
+return { id, name: "Iram", email: "iram@example.com" };
+}
+}
+};
+
+// 3. Create and start Apollo Server
+const server = new ApolloServer({ typeDefs, resolvers });
+
+server.listen().then(({ url }) => {
+console.log(`🚀 Server ready at ${url}`);
+});
